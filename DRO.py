@@ -373,6 +373,7 @@ eval_thr=1e-4
 eval_maxiter=1e+4
 
 colors=['red','black','blue','green','cyan','purple','gold','lime','darkorange']
+markers=['.','v','s','P','*']
 label_size=16
 num_size=14
 lgd_size=18
@@ -388,7 +389,7 @@ eta0=0.1                    #Initial eta
 S1=50
 
 hyps=[{'epoch_vt':1,'gamma':1e-4,'S0':n_train,'S1':None,'normalize_power':0,'grad_max':0,\
-       'beta':0,'epoch_momentum':1,'legend':'GD','name':'GD'}]
+       'beta':0,'epoch_momentum':1,'legend':'GD','name':'GD'}]#.vsP*
 hyps+=[{'epoch_vt':1,'gamma':0.2,'S0':n_train,'S1':None,'normalize_power':1,'grad_max':0,\
         'beta':0,'epoch_momentum':1,'legend':'Normalized GD','name':'1GD'}]
 hyps+=[{'epoch_vt':1,'gamma':0.3,'S0':n_train,'S1':None,'normalize_power':1,'grad_max':10.0,\
@@ -448,7 +449,8 @@ plt.figure()
 for hyp_k in range(3):
     hyp=hyps[hyp_k].copy()
     x_plot=np.array(results[hyp_k][x_type])
-    plt.plot(x_plot,results[hyp_k][y_type],color=colors[hyp_k],label=hyp['legend'])
+    plt.plot(x_plot,results[hyp_k][y_type],color=colors[hyp_k],label=hyp['legend'],\
+             marker=markers[hyp_k],markevery=int(len(x_plot)/(hyp_k+6)))
 plt.legend(prop={'size':lgd_size},loc=1)
 plt.xlabel(xlabels[x_type])
 plt.ylabel(ylabels[y_type])
@@ -471,9 +473,11 @@ for hyp_k in [3,4,5,6,7]:
     if x_type=='complexities':
         index=(x_plot<=x_max_stoc)
         x_plot=x_plot[index]
-        plt.plot(x_plot,np.reshape(results[hyp_k][y_type],-1)[index],color=colors[hyp_k],label=hyp['legend'])
+        plt.plot(x_plot,np.reshape(results[hyp_k][y_type],-1)[index],color=colors[hyp_k],label=hyp['legend'],\
+                 marker=markers[hyp_k-3],markevery=int(len(x_plot)/(hyp_k+6)))
     else:
-        plt.plot(x_plot,results[hyp_k][y_type],color=colors[hyp_k],label=hyp['legend'])
+        plt.plot(x_plot,results[hyp_k][y_type],color=colors[hyp_k],label=hyp['legend'],\
+                 marker=markers[hyp_k-3],markevery=int(len(x_plot)/(hyp_k+6)))
 plt.legend(prop={'size':lgd_size},loc=1)
 plt.xlabel(xlabels[x_type])
 plt.ylabel(ylabels[y_type])

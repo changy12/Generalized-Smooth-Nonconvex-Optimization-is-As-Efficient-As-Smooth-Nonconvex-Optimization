@@ -100,6 +100,7 @@ epoch_eval=1
 print_progress=False
 percentile=95
 colors=['red','black','blue','green','cyan','purple','gold','lime','darkorange']
+markers=['.','v','s','P','*']
 label_size=16
 num_size=14
 lgd_size=18
@@ -221,14 +222,14 @@ for y_type in ['obj']:
                     upper_loss = np.percentile(results[hyp_str][y_type], percentile, axis=0)
                     lower_loss = np.percentile(results[hyp_str][y_type], 100 - percentile, axis=0)
                     avg_loss = np.mean(results[hyp_str][y_type], axis=0)
-                    plt.plot(x_plot[indexes],avg_loss[indexes],color=colors[k],label=hyp['legend'])
+                    plt.plot(x_plot[indexes],avg_loss[indexes],color=colors[k],marker=markers[k],markevery=int(len(avg_loss[indexes])/(k+6)),label=hyp['legend'])
                     if num_exprs>1:
                         plt.fill_between(x_plot[indexes],lower_loss[indexes],upper_loss[indexes],color=colors[k],alpha=0.3,edgecolor="none")
                 else:
                     upper_loss = np.percentile(results[hyp_str][y_type], percentile, axis=0)
                     lower_loss = np.percentile(results[hyp_str][y_type], 100 - percentile, axis=0)
                     avg_loss = np.mean(results[hyp_str][y_type], axis=0)
-                    plt.plot(x_plot,avg_loss,color=colors[k],label=hyp['legend'])
+                    plt.plot(x_plot,avg_loss,color=colors[k],marker=markers[k],markevery=int(len(avg_loss)/(k+6)),label=hyp['legend'])
                     if num_exprs>1:
                         plt.fill_between(x_plot,lower_loss,upper_loss,color=colors[k],alpha=0.3,edgecolor="none")
                 k+=1
@@ -256,216 +257,4 @@ for hyp in hyps:
         hyp_txt.write(hyp_name+':'+str(hyp[hyp_name])+'\n')
     hyp_txt.write('\n\n')
 hyp_txt.close()
-
-if False:  #To write numeric results in rebuttal
-    for k in range(5):
-        print(hyps[k]['legend'])
-        print(results[str(hyps[k])]['obj'][0,[0,9,19,49,99,199,299,499]])
-        print()
-        
-    for k in [5,6,7,8,9]:
-        print(hyps[k]['legend'])
-        index=[]
-        i=0
-        for tmp in results[str(hyps[k])]['complexity']:
-            if tmp in [0,3000,3200,6400,12800,16000,19000,22400]:
-                index+=[i]
-            i+=1
-        print(results[str(hyps[k])]['obj'][0,index])
-        print()
-
-if False: #To tune    
-    def tune(hyp,para_tune,range_tune,total_iters,z0=None,folder='tune',\
-             colors=['red','black','blue','green','cyan','purple','gold','lime','darkorange'],\
-                 y_types=['obj'],print_progress=False):
-        hyp=hyp.copy()
-        if not os.path.isdir(folder):
-            os.makedirs(folder)
-            
-        is_tune1=False
-        if type(para_tune) in [list,tuple]:
-            if len(para_tune)==1:
-                is_tune1=True
-        else:
-            para_tune=[para_tune]
-            is_tune1=True
-        
-        if is_tune1:
-            if type(range_tune[0]) in [list,tuple]:
-                range_tune=range_tune[0]
-        
-        # varnames=['epoch_vt','gamma','S0','S1','normalize_power','beta','epoch_momentum']
-        # for var in varnames:
-        #     if var not in para_tune:
-        #         exec(var+'='+str(hyp[var]))
-        
-        if z0 is None:
-            random.seed(1)
-            np.random.seed(1)
-            np.np.random.normal(size=d)   #Initialize model parameter
-        
-        if is_tune1:
-            var=para_tune[0]
-            for x_type in ['complexity','iters']:
-                for y_type in y_types:
-                    plt.figure()
-                    color_k=0
-                    is_plot=False
-                    for value1 in range_tune:
-                        print("x_type:"+x_type+", y_type:"+y_type+", "+var+'='+str(value1))
-                        print()
-                        hyp[var]=value1
-                        # exec(var+'='+str(value1))
-                        zt,z_err_set,obj_set,grad_norm_set,iters_set,complexity_set=\
-                            Spider_PhaseRetrieval(A,y_true,total_iters,hyp['epoch_vt'],hyp['epoch_momentum'],\
-                                                  hyp['gamma'],hyp['S0'],hyp['S1'],hyp['beta'],z0,\
-                                                  hyp['normalize_power'],hyp['grad_max'],epoch_eval,print_progress)
-                                
-                        y_set=eval(y_type+'_set')
-                        if len(y_set)>0:
-                            if not (np.any(np.isnan(y_set)) or np.any(np.isinf(y_set)) or np.any(np.abs(y_set)>2*np.abs(y_set[0])+(1e+9))):
-                                is_plot=True
-                                plt.plot(eval(x_type+'_set'),y_set,color=colors[color_k],label=var+'='+str(value1))
-                        color_k+=1
-                    if is_plot:
-                        try:
-                            plt.yscale("log")  
-                        except:
-                            pass
-                        plt.legend()
-                        plt.xlabel(x_type+'_set')
-                        plt.ylabel(y_type+'_set')
-                        plt.savefig(folder+'/'+y_type+'VS'+x_type, dpi=200)
-                        plt.close()
-        else:
-            for x_type in ['complexity','iters']:
-                for y_type in y_types:
-                    for k in [0,1]:
-                        var1=para_tune[k]
-                        var2=para_tune[1-k]
-                        for value1 in range_tune[k]:   #Each figure
-                            hyp[var1]=value1
-                            plt.figure()
-                            color_k=0
-                            is_plot=False
-                            for value2 in range_tune[1-k]:    #Each curve
-                                print("x_type:"+x_type+", y_type:"+y_type+", k="+str(k)+", "+var1+'='+str(value1)+", "+var2+'='+str(value2))
-                                print()
-                                hyp[var2]=value2
-                                # exec(var2+'='+str(value2))
-                                zt,z_err_set,obj_set,grad_norm_set,iters_set,complexity_set=\
-                                    Spider_PhaseRetrieval(A,y_true,total_iters,hyp['epoch_vt'],hyp['epoch_momentum'],\
-                                                          hyp['gamma'],hyp['S0'],hyp['S1'],hyp['beta'],z0,\
-                                                          hyp['normalize_power'],hyp['grad_max'],epoch_eval,print_progress)                          
-                                y_set=eval(y_type+'_set')
-                                if len(y_set)>0:
-                                    if not (np.any(np.isnan(y_set)) or np.any(np.isinf(y_set)) or np.any(np.abs(y_set)>2*np.abs(y_set[0])+(1e+9))):
-                                        is_plot=True
-                                        plt.plot(eval(x_type+'_set'),y_set,color=colors[color_k],label=var2+'='+str(value2))
-                                color_k+=1
-                            if is_plot:
-                                try:
-                                    plt.yscale("log")  
-                                except:
-                                    pass
-                                plt.legend()
-                                plt.xlabel(x_type+'_set')
-                                plt.ylabel(y_type+'_set')
-                                plt.title(var1+'='+str(value1))
-                                # if y_type=='Psi' or value1>2.0:
-                                #     pdb.set_trace()   #To delete
-                                folder1=folder+'/'+y_type+'VS'+x_type
-                                if not os.path.isdir(folder1):
-                                    os.makedirs(folder1)
-                                # try:
-                                plt.savefig(folder1+'/'+var1+str(value1)+'.png', dpi=200)
-                                # except:
-                                #     pdb.set_trace()    #To delete
-                                plt.close()
-
-
-    y_types=['obj']
-    
-    #Tune GD: gamma=8e-4,7e-4,6e-4,5e-4
-    para_tune='gamma'
-    range_tune=[k*(1e-4) for k in range(1,10)]
-    # range_tune=[10**k for k in range(-8,0)]
-    folder1=folder
-    tune(hyps[0].copy(),para_tune,range_tune,total_iters,z0,folder=folder1+'/tuneGD')
-
-    #Tune 1/3-GD: gamma=3e-2,2e-2,1e-2
-    para_tune='gamma'
-    range_tune=[k*(1e-2) for k in range(1,10)]
-    # range_tune=[10**k for k in range(-4,3)]
-    folder1=folder
-    tune(hyps[1].copy(),para_tune,range_tune,total_iters,z0,folder=folder1+'/tune0.33GD')
-        
-    #Tune 2/3-GD: gamma=0.1,0.09,0.08,0.07
-    para_tune='gamma'
-    range_tune=[k*(1e-1) for k in range(1,10)]
-    range_tune=[k*(1e-2) for k in range(2,11)]
-    # range_tune=[10**k for k in range(-2,4)]
-    folder1=folder
-    tune(hyps[2].copy(),para_tune,range_tune,total_iters,z0,folder=folder1+'/tune0.67GD')
-    
-    #Tune 1-GD: gamma=0.2,0.1
-    para_tune='gamma'
-    range_tune=[k*(2e-1) for k in range(1,4)]
-    range_tune=[10**k for k in range(-1,5)]
-    folder1=folder
-    tune(hyps[3].copy(),para_tune,range_tune,total_iters,z0,folder=folder1+'/tune1GD')
-
-    #Tune Clipped-GD: gamma=0.9, grad_max=100
-    para_tune=['gamma','grad_max']
-    range_tune=[k*(1e-1) for k in range(1,10)],[10**k for k in range(0,5)]
-    # range_tune=[10**k for k in range(-4,2)],[0.1,0.4,1.0,4.0,10.0]
-    folder1=folder
-    tune(hyps[4].copy(),para_tune,range_tune,total_iters,z0,folder=folder1+'/tuneClippedGD')
-
-    random.seed(1)
-    np.random.seed(1)
-    hyp=hyps[4].copy()
-    num_iters_init=10
-    z1,z_err_set,obj_set,grad_norm_set,iters_set,complexity_set=\
-        Spider_PhaseRetrieval(A,y_true,num_iters_init,hyp['epoch_vt'],hyp['epoch_momentum'],hyp['gamma'],hyp['S0'],hyp['S1'],hyp['beta'],z0,\
-                              hyp['normalize_power'],hyp['grad_max'],epoch_eval=1,print_progress=False)
-
-    total_iters_stoc=100
-    #Tune SGD: gamma=2e-4,3e-4
-    para_tune='gamma'
-    range_tune=[k*(1e-4) for k in range(2,11)]
-    # range_tune=[10**k for k in range(-9,0)]
-    folder1=folder
-    tune(hyps[5].copy(),para_tune,range_tune,total_iters,z1,folder=folder1+'/tuneSGD')
-    
-    #Tune 1-SGD: gamma=2e-3,3e-3,1e-3
-    para_tune='gamma'
-    range_tune=[k*(1e-3) for k in range(1,10)]
-    # range_tune=[10**k for k in range(-3,3)]
-    # range_tune=[0.2,0.4,0.6,0.8,1.0,2.0,4.0,6.0,8.0]
-    folder1=folder
-    tune(hyps[6].copy(),para_tune,range_tune,total_iters,z1,folder=folder1+'/tune1SGD')
-    
-    #Tune 1-SGD momentum: gamma=3e-3; beta=1e-4 
-    para_tune=['gamma','beta']
-    range_tune=[1e-3,2e-3,3e-3],[0,1e-6,1e-5,1e-4,1e-3,2e-3,3e-3]
-    folder1=folder
-    tune(hyps[7].copy(),para_tune,range_tune,total_iters,z1,folder=folder1+'/tune1SGDm')
-    
-    #Tune Clipped-SGD: 
-    #gamma=0.3; grad_max=1000
-    para_tune=['gamma','grad_max']
-    range_tune=[10**k for k in range(-4,2)],[10**k for k in range(0,5)]
-    range_tune=[0.1,0.2,0.3],[10**k for k in range(0,5)]
-    folder1=folder
-    tune(hyps[8].copy(),para_tune,range_tune,total_iters,z1,folder=folder1+'/tuneClippedSGD')
-    
-    #Tune Spider: gamma=0.01, epoch_vt=5
-    #gamma=0.001, epoch_vt=50
-    para_tune=['gamma','epoch_vt']
-    range_tune=[10**k for k in range(-5,3)],[5,10,20,30,40,50]
-    # range_tune=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9],[5,10]
-    folder1=folder
-    tune(hyps[9].copy(),para_tune,range_tune,total_iters,z1,folder=folder1+'/tuneSpiderCoarse')
-
 
