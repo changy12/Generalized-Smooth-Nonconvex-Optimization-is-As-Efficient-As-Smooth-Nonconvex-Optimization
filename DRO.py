@@ -373,7 +373,7 @@ eval_thr=1e-4
 eval_maxiter=1e+4
 
 colors=['red','black','blue','green','cyan','purple','gold','lime','darkorange']
-markers=['.','v','s','P','*']
+markers=['P','v','*','s','.']
 label_size=16
 num_size=14
 lgd_size=18
